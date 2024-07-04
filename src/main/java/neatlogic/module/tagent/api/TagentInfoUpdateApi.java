@@ -19,6 +19,7 @@ import com.alibaba.fastjson.JSONObject;
 import neatlogic.framework.cmdb.crossover.IResourceAccountCrossoverMapper;
 import neatlogic.framework.cmdb.dto.resourcecenter.AccountIpVo;
 import neatlogic.framework.cmdb.dto.resourcecenter.AccountProtocolVo;
+import neatlogic.framework.cmdb.exception.resourcecenter.ResourceCenterAccountProtocolNotFoundException;
 import neatlogic.framework.common.constvalue.ApiParamType;
 import neatlogic.framework.crossover.CrossoverServiceFactory;
 import neatlogic.framework.dao.mapper.runner.RunnerMapper;
@@ -29,6 +30,7 @@ import neatlogic.framework.restful.core.publicapi.PublicApiComponentBase;
 import neatlogic.framework.tagent.dao.mapper.TagentMapper;
 import neatlogic.framework.cmdb.dto.resourcecenter.AccountBaseVo;
 import neatlogic.framework.tagent.dto.TagentVo;
+import neatlogic.framework.tagent.exception.TagentAccountNotFoundException;
 import neatlogic.framework.tagent.exception.TagentNotFoundException;
 import neatlogic.framework.tagent.service.TagentService;
 import org.apache.commons.collections4.CollectionUtils;
@@ -165,7 +167,10 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
     private void updateTagentIpAndAccount(JSONObject jsonObj, TagentVo tagent) {
         if (Objects.equals(jsonObj.getString("needUpdateTagentIp"), "1")) {
             IResourceAccountCrossoverMapper resourceAccountCrossoverMapper = CrossoverServiceFactory.getApi(IResourceAccountCrossoverMapper.class);
-            AccountBaseVo tagentAccountVo = tagentMapper.getResourceAccountByIpAndPort(tagent.getIp(), tagent.getPort());
+            AccountBaseVo tagentAccountVo = tagentMapper.getTagentAccountByIpAndPort(tagent.getIp(), tagent.getPort());
+            if(tagentAccountVo == null){
+                throw new TagentAccountNotFoundException(tagent.getIp(), tagent.getPort());
+            }
             String protocolName;
             if (tagent.getPort() == 3939) {
                 protocolName = "tagent";
@@ -173,7 +178,9 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
                 protocolName = "tagent." + tagent.getPort();
             }
             AccountProtocolVo protocolVo = resourceAccountCrossoverMapper.getAccountProtocolVoByProtocolName(protocolName);
-
+            if(protocolVo == null){
+                throw new ResourceCenterAccountProtocolNotFoundException(protocolName);
+            }
             List<String> oldIpList = tagentMapper.getTagentIpListByTagentIpAndPort(tagent.getIp(), tagent.getPort());
             List<String> newIpStringList = new ArrayList<>();
             if (jsonObj.getString("ipString") != null) {
@@ -182,10 +189,14 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
             List<String> newIpList = newIpStringList;
 
             //删除多余的tagent ip和账号
-            tagentService.deleteTagentIpList(oldIpList.stream().filter(item -> !newIpList.contains(item)).collect(toList()), tagent);
-
+            if(CollectionUtils.isNotEmpty(oldIpList)) {
+                tagentService.deleteTagentIpList(oldIpList.stream().filter(item -> !newIpList.contains(item)).collect(toList()), tagent);
+            }
             if (CollectionUtils.isNotEmpty(newIpList)) {
-                List<String> insertTagentIpList = newIpList.stream().filter(item -> !oldIpList.contains(item)).collect(toList());
+                List<String> insertTagentIpList = newIpList;
+                if(CollectionUtils.isNotEmpty(oldIpList)) {
+                    insertTagentIpList = newIpList.stream().filter(item -> !oldIpList.contains(item)).collect(toList());
+                }
                 //新增tagent ip和账号
                 if (CollectionUtils.isNotEmpty(insertTagentIpList)) {
                     tagentMapper.insertTagentIp(tagent.getId(), insertTagentIpList);

@@ -94,7 +94,7 @@ public class TagentDeleteApi extends PrivateApiComponentBase {
                         deletedIpList = deletedIpList.stream().filter(item -> !neededIpList.contains(item)).collect(toList());
                     }
                     for (String ip : deletedIpList) {
-                        AccountBaseVo deletedAccountVo = tagentMapper.getResourceAccountByIpAndPort(ip, tagent.getPort());
+                        AccountBaseVo deletedAccountVo = tagentMapper.getTagentAccountByIpAndPort(ip, tagent.getPort());
                         if (deletedAccountVo != null) {
                             deletedAccountIdList.add(deletedAccountVo.getId());
                         }

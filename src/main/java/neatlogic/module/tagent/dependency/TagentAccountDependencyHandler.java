@@ -1,6 +1,6 @@
 package neatlogic.module.tagent.dependency;
 
-import neatlogic.framework.dependency.core.CustomTableDependencyHandlerBase;
+import neatlogic.framework.dependency.core.CustomDependencyHandlerBase;
 import neatlogic.framework.dependency.core.IFromType;
 import neatlogic.framework.dependency.dto.DependencyInfoVo;
 import neatlogic.framework.tagent.enums.TagentFromType;
@@ -13,7 +13,7 @@ import java.util.List;
  * @date 2022/3/10 11:51 上午
  */
 @Service
-public class TagentAccountDependencyHandler extends CustomTableDependencyHandlerBase {
+public class TagentAccountDependencyHandler extends CustomDependencyHandlerBase {
 
     /**
      * 表名

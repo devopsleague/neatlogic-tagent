@@ -24,6 +24,8 @@ import neatlogic.framework.common.constvalue.ApiParamType;
 import neatlogic.framework.crossover.CrossoverServiceFactory;
 import neatlogic.framework.dao.mapper.runner.RunnerMapper;
 import neatlogic.framework.dto.runner.RunnerVo;
+import neatlogic.framework.exception.core.ApiRuntimeException;
+import neatlogic.framework.exception.runner.RunnerNotFoundException;
 import neatlogic.framework.restful.annotation.*;
 import neatlogic.framework.restful.constvalue.OperationTypeEnum;
 import neatlogic.framework.restful.core.publicapi.PublicApiComponentBase;
@@ -111,7 +113,6 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
         boolean updateStatus = true;
         boolean needUpdateGroup = true;
         JSONObject result = new JSONObject();
-        long id = paramObj.getLong("agentId");
         try {
             TagentVo tagent = new TagentVo(paramObj);
             Long tagentId = tagentMapper.getTagentIdByTagentIpAndPort(tagent.getIp(), tagent.getPort());
@@ -125,7 +126,7 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
                 if (runnerVo != null) {
                     tagent.setRunnerId(runnerVo.getId());
                 } else {
-                    logger.error(tagent.getRunnerIp() + ":" + tagent.getRunnerPort() + "没有找到匹配的runner,请确认执行器管理是否存在该runner");
+                    throw new RunnerNotFoundException(tagent.getRunnerIp(), tagent.getRunnerPort());
                 }
             }
             //2、更新tagent信息（包括更新os信息，如果不存在os则insert后再绑定osId、osbitId）
@@ -138,7 +139,7 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
             Long runnerGroupId = paramObj.getLong("proxyGroupId");
             String remoteGroupInfo = paramObj.getString("proxyGroup");
             List<RunnerVo> runnerList = runnerMapper.getRunnerListByGroupId(runnerGroupId);// 此语句有L2 cache，5分钟失效
-            if (runnerList != null && runnerList.size() > 0) {
+            if (CollectionUtils.isNotEmpty(runnerList)) {
                 localGroupInfo = runnerList.stream().map(e -> e.getHost() + ":" + e.getNettyPort()).collect(Collectors.joining(","));
             }
             if (remoteGroupInfo.equals(localGroupInfo)) {
@@ -147,7 +148,11 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
         } catch (Exception e) {
             updateStatus = false;
             message = e.getMessage();
-            logger.error(e.getMessage(), e);
+            if (e instanceof ApiRuntimeException) {
+                logger.error(e.getMessage());
+            } else {
+                logger.error(e.getMessage(), e);
+            }
         }
         // update runner group info
         if (needUpdateGroup) {
@@ -168,7 +173,7 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
         if (Objects.equals(jsonObj.getString("needUpdateTagentIp"), "1")) {
             IResourceAccountCrossoverMapper resourceAccountCrossoverMapper = CrossoverServiceFactory.getApi(IResourceAccountCrossoverMapper.class);
             AccountBaseVo tagentAccountVo = tagentMapper.getTagentAccountByIpAndPort(tagent.getIp(), tagent.getPort());
-            if(tagentAccountVo == null){
+            if (tagentAccountVo == null) {
                 throw new TagentAccountNotFoundException(tagent.getIp(), tagent.getPort());
             }
             String protocolName;
@@ -178,7 +183,7 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
                 protocolName = "tagent." + tagent.getPort();
             }
             AccountProtocolVo protocolVo = resourceAccountCrossoverMapper.getAccountProtocolVoByProtocolName(protocolName);
-            if(protocolVo == null){
+            if (protocolVo == null) {
                 throw new ResourceCenterAccountProtocolNotFoundException(protocolName);
             }
             List<String> oldIpList = tagentMapper.getTagentIpListByTagentIpAndPort(tagent.getIp(), tagent.getPort());
@@ -189,12 +194,12 @@ public class TagentInfoUpdateApi extends PublicApiComponentBase {
             List<String> newIpList = newIpStringList;
 
             //删除多余的tagent ip和账号
-            if(CollectionUtils.isNotEmpty(oldIpList)) {
+            if (CollectionUtils.isNotEmpty(oldIpList)) {
                 tagentService.deleteTagentIpList(oldIpList.stream().filter(item -> !newIpList.contains(item)).collect(toList()), tagent);
             }
             if (CollectionUtils.isNotEmpty(newIpList)) {
                 List<String> insertTagentIpList = newIpList;
-                if(CollectionUtils.isNotEmpty(oldIpList)) {
+                if (CollectionUtils.isNotEmpty(oldIpList)) {
                     insertTagentIpList = newIpList.stream().filter(item -> !oldIpList.contains(item)).collect(toList());
                 }
                 //新增tagent ip和账号

@@ -17,6 +17,7 @@ package neatlogic.module.tagent.api;
 
 import com.alibaba.fastjson.JSONObject;
 import neatlogic.framework.cmdb.crossover.IResourceAccountCrossoverMapper;
+import neatlogic.framework.cmdb.dto.resourcecenter.AccountBaseVo;
 import neatlogic.framework.cmdb.dto.resourcecenter.AccountIpVo;
 import neatlogic.framework.cmdb.dto.resourcecenter.AccountProtocolVo;
 import neatlogic.framework.cmdb.exception.resourcecenter.ResourceCenterAccountProtocolNotFoundException;
@@ -28,9 +29,8 @@ import neatlogic.framework.exception.core.ApiRuntimeException;
 import neatlogic.framework.exception.runner.RunnerNotFoundException;
 import neatlogic.framework.restful.annotation.*;
 import neatlogic.framework.restful.constvalue.OperationTypeEnum;
-import neatlogic.framework.restful.core.publicapi.PublicApiComponentBase;
+import neatlogic.framework.restful.core.privateapi.PrivateApiComponentBase;
 import neatlogic.framework.tagent.dao.mapper.TagentMapper;
-import neatlogic.framework.cmdb.dto.resourcecenter.AccountBaseVo;
 import neatlogic.framework.tagent.dto.TagentVo;
 import neatlogic.framework.tagent.exception.TagentAccountNotFoundException;
 import neatlogic.framework.tagent.exception.TagentNotFoundException;
@@ -55,7 +55,7 @@ import static java.util.stream.Collectors.toList;
 @Service
 @Transactional
 @OperationType(type = OperationTypeEnum.UPDATE)
-public class TagentInfoUpdateApi extends PublicApiComponentBase {
+public class TagentInfoUpdateApi extends PrivateApiComponentBase {
 
 
     private Logger logger = LoggerFactory.getLogger(TagentInfoUpdateApi.class);

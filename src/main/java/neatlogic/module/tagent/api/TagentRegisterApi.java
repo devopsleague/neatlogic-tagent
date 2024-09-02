@@ -24,11 +24,14 @@ import neatlogic.framework.dao.mapper.runner.RunnerMapper;
 import neatlogic.framework.dto.runner.GroupNetworkVo;
 import neatlogic.framework.dto.runner.RunnerGroupVo;
 import neatlogic.framework.dto.runner.RunnerVo;
-import neatlogic.framework.exception.runner.*;
+import neatlogic.framework.exception.runner.RunnerGroupIdNotFoundException;
+import neatlogic.framework.exception.runner.RunnerGroupRunnerListEmptyException;
+import neatlogic.framework.exception.runner.RunnerIdNotFoundException;
+import neatlogic.framework.exception.runner.RunnerUrlIsNullException;
 import neatlogic.framework.integration.authentication.enums.AuthenticateType;
 import neatlogic.framework.restful.annotation.*;
 import neatlogic.framework.restful.constvalue.OperationTypeEnum;
-import neatlogic.framework.restful.core.publicapi.PublicApiComponentBase;
+import neatlogic.framework.restful.core.privateapi.PrivateApiComponentBase;
 import neatlogic.framework.tagent.dao.mapper.TagentMapper;
 import neatlogic.framework.tagent.dto.TagentOSVo;
 import neatlogic.framework.tagent.dto.TagentVo;
@@ -56,7 +59,7 @@ import java.util.stream.Collectors;
 @Transactional
 @Service
 @OperationType(type = OperationTypeEnum.OPERATE)
-public class TagentRegisterApi extends PublicApiComponentBase {
+public class TagentRegisterApi extends PrivateApiComponentBase {
     private final Logger logger = LoggerFactory.getLogger(TagentRegisterApi.class);
     @Resource
     TagentMapper tagentMapper;

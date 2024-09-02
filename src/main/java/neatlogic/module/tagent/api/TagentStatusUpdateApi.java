@@ -1,15 +1,15 @@
 package neatlogic.module.tagent.api;
 
+import com.alibaba.fastjson.JSONObject;
 import neatlogic.framework.asynchronization.threadlocal.UserContext;
 import neatlogic.framework.common.constvalue.ApiParamType;
 import neatlogic.framework.common.util.IpUtil;
 import neatlogic.framework.restful.annotation.*;
 import neatlogic.framework.restful.constvalue.OperationTypeEnum;
-import neatlogic.framework.restful.core.publicapi.PublicApiComponentBase;
+import neatlogic.framework.restful.core.privateapi.PrivateApiComponentBase;
 import neatlogic.framework.tagent.dao.mapper.TagentMapper;
 import neatlogic.framework.tagent.dto.TagentVo;
 import neatlogic.framework.tagent.exception.TagentNotFoundException;
-import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,7 +19,7 @@ import javax.annotation.Resource;
 
 @Service
 @OperationType(type = OperationTypeEnum.UPDATE)
-public class TagentStatusUpdateApi extends PublicApiComponentBase {
+public class TagentStatusUpdateApi extends PrivateApiComponentBase {
 
     private final Logger logger = LoggerFactory.getLogger(TagentStatusUpdateApi.class);
 

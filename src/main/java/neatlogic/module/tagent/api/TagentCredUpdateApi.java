@@ -1,13 +1,13 @@
 package neatlogic.module.tagent.api;
 
 import com.alibaba.fastjson.JSONObject;
+import neatlogic.framework.cmdb.dto.resourcecenter.AccountBaseVo;
 import neatlogic.framework.cmdb.exception.resourcecenter.ResourceCenterAccountNotFoundException;
 import neatlogic.framework.common.constvalue.ApiParamType;
 import neatlogic.framework.restful.annotation.*;
 import neatlogic.framework.restful.constvalue.OperationTypeEnum;
-import neatlogic.framework.restful.core.publicapi.PublicApiComponentBase;
+import neatlogic.framework.restful.core.privateapi.PrivateApiComponentBase;
 import neatlogic.framework.tagent.dao.mapper.TagentMapper;
-import neatlogic.framework.cmdb.dto.resourcecenter.AccountBaseVo;
 import neatlogic.framework.tagent.dto.TagentVo;
 import neatlogic.framework.tagent.exception.TagentAccountNotFoundException;
 import neatlogic.framework.tagent.exception.TagentNotFoundException;
@@ -17,7 +17,7 @@ import javax.annotation.Resource;
 
 @Service
 @OperationType(type = OperationTypeEnum.UPDATE)
-public class TagentCredUpdateApi extends PublicApiComponentBase {
+public class TagentCredUpdateApi extends PrivateApiComponentBase {
 
     @Resource
     TagentMapper tagentMapper;

@@ -16,13 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 package neatlogic.module.tagent.api;
 
 import com.alibaba.fastjson.JSONObject;
-import neatlogic.framework.cmdb.crossover.IResourceAccountCrossoverMapper;
-import neatlogic.framework.cmdb.dto.resourcecenter.AccountBaseVo;
-import neatlogic.framework.cmdb.dto.resourcecenter.AccountIpVo;
-import neatlogic.framework.cmdb.dto.resourcecenter.AccountProtocolVo;
-import neatlogic.framework.cmdb.exception.resourcecenter.ResourceCenterAccountProtocolNotFoundException;
 import neatlogic.framework.common.constvalue.ApiParamType;
-import neatlogic.framework.crossover.CrossoverServiceFactory;
 import neatlogic.framework.dao.mapper.runner.RunnerMapper;
 import neatlogic.framework.dto.runner.RunnerVo;
 import neatlogic.framework.exception.core.ApiRuntimeException;
@@ -32,25 +26,18 @@ import neatlogic.framework.restful.constvalue.OperationTypeEnum;
 import neatlogic.framework.restful.core.privateapi.PrivateApiComponentBase;
 import neatlogic.framework.tagent.dao.mapper.TagentMapper;
 import neatlogic.framework.tagent.dto.TagentVo;
-import neatlogic.framework.tagent.exception.TagentAccountNotFoundException;
 import neatlogic.framework.tagent.exception.TagentNotFoundException;
-import neatlogic.framework.tagent.service.TagentService;
+import neatlogic.module.tagent.common.UpdateTagentInfoThread;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 @Service
 @Transactional
@@ -61,12 +48,9 @@ public class TagentInfoUpdateApi extends PrivateApiComponentBase {
     private Logger logger = LoggerFactory.getLogger(TagentInfoUpdateApi.class);
 
     @Resource
-    private TagentService tagentService;
-
-    @Resource
     private TagentMapper tagentMapper;
 
-    @Autowired
+    @Resource
     private RunnerMapper runnerMapper;
 
     @Override
@@ -130,11 +114,9 @@ public class TagentInfoUpdateApi extends PrivateApiComponentBase {
                 }
             }
             //2、更新tagent信息（包括更新os信息，如果不存在os则insert后再绑定osId、osbitId）
-            tagentService.updateTagentById(tagent);
-
             //3、当 tagent ip 地址变化(切换网卡)时， 更新 agent ip和账号
-            updateTagentIpAndAccount(paramObj, tagent);
-
+            tagent.setParam(paramObj);
+            UpdateTagentInfoThread.addUpdateTagent(tagent);
             //4、 当组信息与cache不一致时，更新cache
             Long runnerGroupId = paramObj.getLong("proxyGroupId");
             String remoteGroupInfo = paramObj.getString("proxyGroup");
@@ -169,55 +151,5 @@ public class TagentInfoUpdateApi extends PrivateApiComponentBase {
         return result;
     }
 
-    private void updateTagentIpAndAccount(JSONObject jsonObj, TagentVo tagent) {
-        if (Objects.equals(jsonObj.getString("needUpdateTagentIp"), "1")) {
-            IResourceAccountCrossoverMapper resourceAccountCrossoverMapper = CrossoverServiceFactory.getApi(IResourceAccountCrossoverMapper.class);
-            AccountBaseVo tagentAccountVo = tagentMapper.getTagentAccountByIpAndPort(tagent.getIp(), tagent.getPort());
-            if (tagentAccountVo == null) {
-                throw new TagentAccountNotFoundException(tagent.getIp(), tagent.getPort());
-            }
-            String protocolName;
-            if (tagent.getPort() == 3939) {
-                protocolName = "tagent";
-            } else {
-                protocolName = "tagent." + tagent.getPort();
-            }
-            AccountProtocolVo protocolVo = resourceAccountCrossoverMapper.getAccountProtocolVoByProtocolName(protocolName);
-            if (protocolVo == null) {
-                throw new ResourceCenterAccountProtocolNotFoundException(protocolName);
-            }
-            List<String> oldIpList = tagentMapper.getTagentIpListByTagentIpAndPort(tagent.getIp(), tagent.getPort());
-            List<String> newIpStringList = new ArrayList<>();
-            if (jsonObj.getString("ipString") != null) {
-                newIpStringList = Arrays.asList(jsonObj.getString("ipString").split(","));
-            }
-            List<String> newIpList = newIpStringList;
 
-            //删除多余的tagent ip和账号
-            if (CollectionUtils.isNotEmpty(oldIpList)) {
-                tagentService.deleteTagentIpList(oldIpList.stream().filter(item -> !newIpList.contains(item)).collect(toList()), tagent);
-            }
-            if (CollectionUtils.isNotEmpty(newIpList)) {
-                List<String> insertTagentIpList = newIpList;
-                if (CollectionUtils.isNotEmpty(oldIpList)) {
-                    insertTagentIpList = newIpList.stream().filter(item -> !oldIpList.contains(item)).collect(toList());
-                }
-                //新增tagent ip和账号
-                if (CollectionUtils.isNotEmpty(insertTagentIpList)) {
-                    tagentMapper.insertTagentIp(tagent.getId(), insertTagentIpList);
-                    List<String> sameIpList = tagentMapper.getAccountIpByIpListAndPort(insertTagentIpList, tagent.getPort());
-                    if (CollectionUtils.isNotEmpty(sameIpList)) {
-                        insertTagentIpList = insertTagentIpList.stream().filter(item -> !sameIpList.contains(item)).collect(toList());
-                    }
-                    for (String ip : insertTagentIpList) {
-//                        AccountVo newAccountVo = new AccountVo(ip + "_" + tagent.getPort() + "_tagent", protocolVo.getId(), protocolVo.getPort(), ip, tagentAccountVo.getPasswordPlain());
-                        AccountBaseVo newAccountVo = new AccountBaseVo(ip + "_" + tagent.getPort() + "_tagent", protocolVo.getId(), protocolVo.getPort(), ip, tagentAccountVo.getPasswordPlain());
-                        tagentMapper.insertAccount(newAccountVo);
-//                        resourceAccountCrossoverMapper.insertAccount(newAccountVo);
-                        tagentMapper.insertAccountIp(new AccountIpVo(newAccountVo.getId(), newAccountVo.getIp()));
-                    }
-                }
-            }
-        }
-    }
 }

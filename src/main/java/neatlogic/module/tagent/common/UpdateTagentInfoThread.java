@@ -135,4 +135,8 @@ public class UpdateTagentInfoThread {
     public static void addUpdateTagent(TagentVo tagentVo) {
         blockingQueue.offer(tagentVo);
     }
+
+    public static int getSize(){
+        return blockingQueue.size();
+    }
 }
